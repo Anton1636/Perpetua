@@ -1,0 +1,13 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+body {
+  /* Chronograph base slate\ */
+  background: #0e1113;
+}
