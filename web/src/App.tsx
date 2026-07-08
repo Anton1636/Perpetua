@@ -1,29 +1,37 @@
-import { env } from "@/shared/config/env";
+import { motion } from "framer-motion";
 
-// Chronograph design tokens land ..., the UI kit +
-// instrument shell ..., and the Portfolio chronometer hero.
+// Day 2 smoke test: proves design tokens (CSS variables) + self-hosted fonts +
+// framer-motion all work. The real Chronograph UI (kit + instrument shell)
 export default function App() {
-  void env; // touch the validated config so it runs at startup
   return (
     <main
       style={{
         minHeight: "100dvh",
         display: "grid",
         placeItems: "center",
-        background: "#0e1113",
-        color: "#ede3c2",
-        fontFamily: "system-ui, sans-serif",
+        padding: "var(--s-4)",
         textAlign: "center",
-        padding: 24,
       }}
     >
-      <div>
-        <h1 style={{ fontSize: 44, margin: 0, letterSpacing: "0.04em", fontWeight: 700 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div
+          className="mono"
+          style={{ color: "var(--c-steel)", fontSize: "var(--t-cap)", letterSpacing: "0.25em" }}
+        >
+          CHRONOGRAPH · DESIGN TOKENS
+        </div>
+        <h1 style={{ fontSize: "var(--t-hero)", letterSpacing: "0.04em", marginTop: "var(--s-2)" }}>
           PERPETUA
         </h1>
-        <div style={{ width: 56, height: 2, background: "#bfe36b", margin: "16px auto" }} />
-        <p style={{ color: "#9aa3a7", margin: 0 }}>Scaffold OK — Vite + React + TypeScript + FSD</p>
-      </div>
+        <div
+          style={{ width: 56, height: 2, background: "var(--c-lume)", margin: "var(--s-3) auto" }}
+        />
+        <p style={{ color: "var(--c-steel)" }}>Tokens, fonts and motion wired up.</p>
+      </motion.div>
     </main>
   );
 }
