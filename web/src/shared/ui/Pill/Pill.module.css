@@ -1,0 +1,27 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-cap);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.lume {
+  background: var(--c-lumeDim);
+  color: var(--c-lume);
+}
+.red {
+  background: var(--c-redDim);
+  color: var(--c-red);
+}
+.amber {
+  background: var(--c-amberDim);
+  color: var(--c-amber);
+}
+.neutral {
+  background: rgba(237, 227, 194, 0.05);
+  color: var(--c-steel);
+  border: 1px solid var(--c-line);
+}

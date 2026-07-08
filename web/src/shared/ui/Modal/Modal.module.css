@@ -1,0 +1,65 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 8, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 80;
+  animation: fade var(--m-base) var(--m-out);
+}
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100vw - var(--s-4));
+  max-width: 420px;
+  max-height: 85dvh;
+  overflow: auto;
+  background: var(--c-surface2);
+  border: 1px solid var(--c-line2);
+  border-radius: var(--r-xl);
+  box-shadow: var(--e-4);
+  padding: var(--s-4);
+  z-index: 81;
+  animation: pop var(--m-slow) var(--m-spring);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s-3);
+}
+.title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: var(--t-section);
+}
+.close {
+  background: none;
+  border: none;
+  color: var(--c-faint);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+}
+.close:hover {
+  color: var(--c-cream);
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}

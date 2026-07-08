@@ -1,0 +1,59 @@
+.viewport {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 340px;
+  max-width: calc(100vw - 40px);
+  z-index: 90;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  outline: none;
+}
+.toast {
+  background: var(--c-surface3);
+  border: 1px solid var(--c-line2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--e-3);
+  padding: 13px 14px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+.toast[data-state="open"] {
+  animation: slidein var(--m-slow) var(--m-spring);
+}
+.toast[data-state="closed"] {
+  animation: fadeout var(--m-base) ease;
+}
+.icon {
+  flex: none;
+  margin-top: 1px;
+}
+.title {
+  font-weight: 700;
+  font-size: var(--t-body);
+}
+.desc {
+  color: var(--c-steel);
+  font-size: var(--t-cap);
+  margin-top: 2px;
+}
+@keyframes slidein {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fadeout {
+  to {
+    opacity: 0;
+  }
+}

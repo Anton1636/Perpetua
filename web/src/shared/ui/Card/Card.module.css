@@ -1,0 +1,15 @@
+/* Instrument surface. Elevation controls depth (1 = recessed panel, 3 = raised). */
+.card {
+  background: linear-gradient(180deg, var(--c-surface2), var(--c-surface1));
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+}
+.e1 {
+  box-shadow: var(--e-1);
+}
+.e2 {
+  box-shadow: var(--e-2);
+}
+.e3 {
+  box-shadow: var(--e-3);
+}
