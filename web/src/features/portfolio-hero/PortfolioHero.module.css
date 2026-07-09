@@ -1,0 +1,42 @@
+.hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+  padding: clamp(20px, 3vw, 36px);
+}
+
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: var(--c-lume);
+}
+.total {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--c-cream);
+  margin-top: 10px;
+}
+.meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.dialWrap {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .dialWrap {
+    order: -1;
+  }
+}

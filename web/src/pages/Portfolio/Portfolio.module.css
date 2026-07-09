@@ -1,0 +1,13 @@
+.title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(26px, 4vw, 34px);
+  letter-spacing: -0.01em;
+  color: var(--c-cream);
+  margin: 10px 0 18px;
+}
+.error {
+  padding: 40px;
+  text-align: center;
+  color: var(--c-red);
+}
