@@ -1,0 +1,72 @@
+.head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 18px;
+}
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: var(--c-lumeDim);
+  color: var(--c-lume);
+  font-family: var(--f-display);
+  font-weight: 700;
+}
+.balRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.inputWrap {
+  position: relative;
+}
+.dollar {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  font-family: var(--f-display);
+  font-size: 18px;
+  color: var(--c-steel);
+}
+.input {
+  width: 100%;
+  padding: 12px 14px 12px 28px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--f-mono);
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  color: var(--c-cream);
+  outline: none;
+}
+.input:focus {
+  border-color: var(--c-lume);
+}
+.quick {
+  display: flex;
+  gap: 7px;
+  margin-top: 9px;
+}
+.summary {
+  margin-top: 18px;
+  padding: 13px 16px;
+  background: var(--c-surface1);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+.sumRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.error {
+  color: var(--c-amber);
+  font-size: 12px;
+  margin-top: 8px;
+}

@@ -1,15 +1,15 @@
 import { Card, Skeleton, Button } from "@/shared/ui";
-import { usePositions } from "@/entities/position/model";
 import { useVaults } from "@/entities/vault/model";
+import { usePositions } from "@/entities/position/model";
 import { PortfolioHero } from "@/features/portfolio-hero/PortfolioHero";
+import { VaultsGrid } from "@/features/vaults-grid/VaultsGrid";
 import styles from "./Portfolio.module.css";
 
 export function Portfolio() {
-  const positions = usePositions();
   const vaults = useVaults();
+  const positions = usePositions();
 
-  // error state
-  if (positions.isError || vaults.isError) {
+  if (vaults.isError) {
     return (
       <div>
         <h1 className={styles.title}>Portfolio</h1>
@@ -19,10 +19,7 @@ export function Portfolio() {
             variant="ghost"
             size="sm"
             style={{ marginTop: 12 }}
-            onClick={() => {
-              positions.refetch();
-              vaults.refetch();
-            }}
+            onClick={() => vaults.refetch()}
           >
             Try again
           </Button>
@@ -31,8 +28,7 @@ export function Portfolio() {
     );
   }
 
-  // loading state (skeleton hero)
-  if (positions.isLoading || vaults.isLoading) {
+  if (vaults.isLoading) {
     return (
       <div>
         <h1 className={styles.title}>Portfolio</h1>
@@ -48,23 +44,17 @@ export function Portfolio() {
     );
   }
 
-  // empty state
-  if ((positions.data?.length ?? 0) === 0) {
-    return (
-      <div>
-        <h1 className={styles.title}>Portfolio</h1>
-        <Card elevation={2} style={{ padding: 48, textAlign: "center" }}>
-          <p style={{ color: "var(--c-steel)" }}>No positions yet.</p>
-          <Button style={{ marginTop: 16 }}>Browse vaults</Button>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div>
       <h1 className={styles.title}>Portfolio</h1>
-      <PortfolioHero />
+      {positions.length > 0 ? (
+        <PortfolioHero />
+      ) : (
+        <Card elevation={2} style={{ padding: 48, textAlign: "center" }}>
+          <p style={{ color: "var(--c-steel)" }}>No positions yet. Stake a vault to begin.</p>
+        </Card>
+      )}
+      <VaultsGrid />
     </div>
   );
 }
