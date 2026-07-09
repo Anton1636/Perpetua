@@ -1,7 +1,8 @@
 .dial {
+  --dial-size: 300px;
   position: relative;
-  width: 300px;
-  height: 300px;
+  width: var(--dial-size);
+  height: var(--dial-size);
   flex: none;
   transform-style: preserve-3d;
   transition: transform 0.12s ease-out;
@@ -22,7 +23,7 @@
 /* dial face */
 .face {
   position: absolute;
-  inset: 18px;
+  inset: 6%;
   border-radius: 50%;
   transform: translateZ(20px);
   background: radial-gradient(circle at 50% 38%, #1b2125, #11161a 70%);
@@ -32,7 +33,7 @@
 /* guilloché texture */
 .guilloche {
   position: absolute;
-  inset: 26px;
+  inset: 9%;
   border-radius: 50%;
   opacity: 0.5;
   background: repeating-conic-gradient(rgba(237, 227, 194, 0.07) 0deg 1deg, transparent 1deg 4deg);
@@ -42,9 +43,10 @@
   position: absolute;
   top: 7px;
   left: calc(50% - 1px);
-  transform-origin: 50% 125px;
+  transform-origin: 50% calc(var(--dial-size) / 2 - 25px);
   border-radius: 2px;
 }
+
 .tickMajor {
   width: 2.5px;
   height: 14px;
@@ -99,7 +101,7 @@
 /* hands */
 .hand {
   position: absolute;
-  inset: 18px;
+  inset: 6%;
 }
 .handHour {
   transform: translateZ(34px) rotate(305deg);
@@ -129,7 +131,7 @@
 /* sweeping seconds hand (never stops) */
 .seconds {
   position: absolute;
-  inset: 18px;
+  inset: 6%;
   transform: translateZ(46px);
   animation: sweep 9s linear infinite;
 }
@@ -171,16 +173,31 @@
 }
 .glass {
   position: absolute;
-  inset: 14px;
+  inset: 5%;
   border-radius: 50%;
   transform: translateZ(56px);
   pointer-events: none;
   background: radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.16), transparent 42%);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .dial {
-    transform: scale(0.8);
+    --dial-size: 232px;
+  }
+  .subdial {
+    left: calc(50% - 50px);
+    width: 100px;
+  }
+  .subValue {
+    font-size: 11px;
+  }
+  .brandArc {
+    font-size: 9px;
+  }
+}
+@media (max-width: 380px) {
+  .dial {
+    --dial-size: 196px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
