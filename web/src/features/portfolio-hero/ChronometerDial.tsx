@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { formatUsdPrecise } from "@/shared/lib/format";
-import { toWei } from "@/shared/lib/format";
+import { formatUsdNumber } from "@/shared/lib/format";
 import styles from "./ChronometerDial.module.css";
 
 interface Props {
@@ -44,7 +43,7 @@ export function ChronometerDial({ liveAccrual }: Props) {
           <span className={styles.subLabel}>ACCRUING</span>
           <span className={styles.subValue}>
             {/* reuse the precise formatter by wrapping the live number back to wei-ish display */}
-            {formatUsdPrecise(toWei(liveAccrual.toFixed(6)))}
+            {formatUsdNumber(liveAccrual, 6)}
           </span>
         </div>
       </div>

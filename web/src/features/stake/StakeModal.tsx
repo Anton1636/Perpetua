@@ -3,11 +3,9 @@ import { Modal, Button } from "@/shared/ui";
 import type { Vault } from "@/entities/vault/types";
 import { usePositionStore } from "@/entities/position/store";
 import { amountSchema } from "./schema";
-import { WALLET_BALANCE } from "./wallet-balance";
 import { useStakeAction } from "./useStakeAction";
-import { formatUsd, toWei, toNumber } from "@/shared/lib/format";
+import { formatUsd, formatUsdNumber, formatPct, toWei, toNumber } from "@/shared/lib/format";
 import { vaultApy } from "@/entities/vault/model";
-import { formatPct } from "@/shared/lib/format";
 import styles from "./StakeModal.module.css";
 
 interface Props {
@@ -20,11 +18,12 @@ export function StakeModal({ vault, mode, onClose }: Props) {
   const [amount, setAmount] = useState("");
   const runAction = useStakeAction();
   const positions = usePositionStore((s) => s.positions);
+  const available = usePositionStore((s) => s.available);
 
   const staked = vault
-    ? (positions.find((p) => p.vaultAddress === vault.address)?.shares ?? 0n)
+    ? (positions.find((p) => p.vaultAddress === vault.address)?.assets ?? 0n)
     : 0n;
-  const maxWei = vault ? (mode === "stake" ? (WALLET_BALANCE[vault.symbol] ?? 0n) : staked) : 0n;
+  const maxWei = vault ? (mode === "stake" ? available : staked) : 0n;
 
   const validation = useMemo(() => {
     if (!vault) return { ok: false, error: "" };
@@ -70,7 +69,7 @@ export function StakeModal({ vault, mode, onClose }: Props) {
           AMOUNT
         </span>
         <span style={{ fontSize: 12, color: "var(--c-steel)" }}>
-          {mode === "stake" ? "Balance" : "Staked"}:{" "}
+          {mode === "stake" ? "Available" : "Staked"}:{" "}
           <span className="mono">{formatUsd(maxWei)}</span>
         </span>
       </div>
@@ -99,9 +98,7 @@ export function StakeModal({ vault, mode, onClose }: Props) {
         <div className={styles.sumRow}>
           <span style={{ color: "var(--c-steel)" }}>Est. first-year yield</span>
           <span className="mono" style={{ color: "var(--c-lume)", fontWeight: 600 }}>
-            {amount && validation.ok
-              ? formatUsd(toWei((toNumber(toWei(amount)) * vaultApy(vault)).toFixed(2)))
-              : "—"}
+            {amount && validation.ok ? formatUsdNumber(Number(amount) * vaultApy(vault)) : "—"}
           </span>
         </div>
       </div>

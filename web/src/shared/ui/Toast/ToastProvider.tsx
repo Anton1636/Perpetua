@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
   const push = useCallback((t: Omit<ToastItem, "id">) => {
-    setItems((prev) => [...prev, { ...t, id: Date.now() + Math.random() }]);
+    setItems((prev) => [...prev, { ...t, id: Date.now() + Math.random() }].slice(-4));
   }, []);
 
   return (

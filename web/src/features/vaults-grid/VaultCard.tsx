@@ -3,7 +3,7 @@ import { Card, Button } from "@/shared/ui";
 import type { Vault } from "@/entities/vault/types";
 import { vaultApy } from "@/entities/vault/model";
 import { usePositionStore } from "@/entities/position/store";
-import { formatUsd, formatPct } from "@/shared/lib/format";
+import { formatUsd, formatUsdPrecise, formatPct } from "@/shared/lib/format";
 import { RISK_META } from "@/shared/lib/risk";
 import styles from "./VaultCard.module.css";
 
@@ -18,7 +18,7 @@ export function VaultCard({ vault, onStake, onUnstake }: Props) {
     s.positions.find((p) => p.vaultAddress === vault.address),
   );
   const risk = RISK_META[vault.risk];
-  const staked = position?.shares ?? 0n;
+  const staked = position?.assets ?? 0n;
 
   return (
     <Card elevation={2} className={styles.card}>
@@ -79,7 +79,7 @@ export function VaultCard({ vault, onStake, onUnstake }: Props) {
           <div className={styles.posRow} style={{ marginTop: 5 }}>
             <span style={{ color: "var(--c-steel)" }}>Earned</span>
             <span className="mono" style={{ fontWeight: 600, color: "var(--c-lume)" }}>
-              {formatUsd(position!.accrued)}
+              {formatUsdPrecise(position!.accrued, 4)}
             </span>
           </div>
         </div>

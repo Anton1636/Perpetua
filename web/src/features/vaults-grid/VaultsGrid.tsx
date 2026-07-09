@@ -22,12 +22,8 @@ export function VaultsGrid() {
     if (totals.accrued <= 0n) return;
     toast({ kind: "pending", title: "Reinvesting rewards" });
     window.setTimeout(() => {
-      compoundAll();
-      toast({
-        kind: "success",
-        title: "Reinvested",
-        desc: `${formatUsd(totals.accrued)} compounded`,
-      });
+      const compounded = compoundAll();
+      toast({ kind: "success", title: "Reinvested", desc: `${formatUsd(compounded)} compounded` });
     }, 1200);
   };
 

@@ -42,3 +42,8 @@ export function formatCompact(n: number): string {
   if (n >= 1e3) return `$${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}k`;
   return `$${Math.round(n)}`;
 }
+
+/** plain number -> "$1,234.56" (display-only path, no bigint round-trip). */
+export function formatUsdNumber(n: number, dp = 2): string {
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
+}

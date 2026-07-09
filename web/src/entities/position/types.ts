@@ -1,7 +1,11 @@
-// A user's stake in a vault. shares/accrued are bigint wei, chain-shaped.
+// A user's stake in a vault.
+// UNIT RULE: the UI and this store operate in ASSETS (USD value, 18-dec wei).
+// ERC-4626 "shares" exist only on-chain;
+// shares -> assets (convertToAssets) at the edge, so unit-mixing bugs are
+// impossible by construction.
 export interface Position {
   vaultAddress: `0x${string}`;
-  shares: bigint; // vault shares held
-  principal: bigint; // assets originally deposited, wei
-  accrued: bigint; // rewards accrued so far, wei
+  assets: bigint; // current staked value, wei
+  principal: bigint; // originally deposited (net of proportional withdrawals), wei
+  accrued: bigint; // rewards accrued and not yet compounded, wei
 }

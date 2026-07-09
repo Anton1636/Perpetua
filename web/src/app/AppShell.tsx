@@ -50,7 +50,9 @@ function WalletCard() {
       <div className="mono" style={{ marginTop: 8, fontSize: 13, color: "var(--c-cream)" }}>
         0x7f3a…91D2
       </div>
-      <div style={{ marginTop: 3, fontSize: 12, color: "var(--c-faint)" }}>Sepolia testnet</div>
+      <div style={{ marginTop: 6, fontSize: 11, color: "var(--c-amber)" }}>
+        Demo mode · resets on refresh
+      </div>
     </div>
   );
 }
