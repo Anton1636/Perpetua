@@ -1,0 +1,35 @@
+.wrap {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--c-surface1);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.row + .row {
+  border-top: 1px solid var(--c-line);
+}
+.k {
+  color: var(--c-steel);
+}
+.v {
+  font-family: var(--f-mono);
+  font-weight: 600;
+}
+.delta {
+  color: var(--c-lume);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--c-steel);
+  margin-top: 4px;
+}

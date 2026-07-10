@@ -4,7 +4,8 @@ import { useActivityStore } from "@/entities/activity/store";
 import { filterEvents, pendingCount } from "@/entities/activity/selectors";
 import { useVaults } from "@/entities/vault/model";
 import { ActivityTable } from "@/features/activity/ActivityTable";
-import { ActivityFilters, useActivityFilter } from "@/features/activity/ActivityFilters";
+import { ActivityFilters } from "@/features/activity/ActivityFilters";
+import { useActivityFilter } from "@/features/activity/use-activity-filter";
 import { useExportCsv } from "@/features/activity/useExportCsv";
 
 export function Activity() {

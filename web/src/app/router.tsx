@@ -1,8 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppShell } from "./AppShell";
 import { Activity } from "@/pages/Activity/Activity";
-import { Placeholder } from "@/pages/Placeholder/Placeholder";
 import { Portfolio } from "@/pages/Portfolio/Portfolio";
+import { Security } from "@/pages/Security/Security";
 
 export const router = createBrowserRouter([
   {
@@ -11,7 +11,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Portfolio /> },
       { path: "activity", element: <Activity /> },
-      { path: "security", element: <Placeholder name="Security" /> },
+      { path: "security", element: <Security /> },
     ],
   },
 ]);

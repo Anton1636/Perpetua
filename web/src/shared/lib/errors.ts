@@ -1,3 +1,5 @@
+// Domain error codes instead of loose strings.
+// (const object instead of enum — enums are disallowed under erasableSyntaxOnly.)
 export const DomainError = {
   InsufficientBalance: "InsufficientBalance",
   ExceedsPosition: "ExceedsPosition",

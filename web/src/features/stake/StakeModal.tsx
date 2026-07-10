@@ -7,6 +7,8 @@ import { useStakeAction } from "./useStakeAction";
 import { formatUsd, formatUsdNumber, formatPct, toWei, toNumber } from "@/shared/lib/format";
 import { vaultApy } from "@/entities/vault/model";
 import styles from "./StakeModal.module.css";
+import { previewStake, previewUnstake } from "@/entities/position/preview";
+import { TxPreview } from "@/features/security/TxPreview";
 
 interface Props {
   vault: Vault | null;
@@ -32,6 +34,15 @@ export function StakeModal({ vault, mode, onClose }: Props) {
       ? { ok: true, error: "" }
       : { ok: false, error: result.error.issues[0]?.message ?? "" };
   }, [amount, maxWei, vault]);
+
+  const preview = useMemo(() => {
+    if (!vault || !amount || !validation.ok) return null;
+    const pos = positions.find((p) => p.vaultAddress === vault.address);
+    const amt = toWei(amount);
+    return mode === "stake"
+      ? previewStake(amt, available, pos)
+      : previewUnstake(amt, available, pos);
+  }, [vault, amount, validation.ok, mode, available, positions]);
 
   if (!vault) return null;
 
@@ -102,6 +113,8 @@ export function StakeModal({ vault, mode, onClose }: Props) {
           </span>
         </div>
       </div>
+
+      {preview && <TxPreview preview={preview} />}
 
       {validation.error && <div className={styles.error}>{validation.error}</div>}
 
