@@ -9,20 +9,30 @@ import type { Vault } from "@/entities/vault/types";
 import { VaultCard } from "./VaultCard";
 import { StakeModal } from "@/features/stake/StakeModal";
 import styles from "./VaultsGrid.module.css";
+import { useActivityStore } from "@/entities/activity/store";
+import { DomainError, ERROR_COPY } from "@/shared/lib/errors";
 
 export function VaultsGrid() {
   const vaults = useVaults();
   const toast = useToast();
   const compoundAll = usePositionStore((s) => s.compoundAll);
   const totals = usePortfolioTotals();
+  const begin = useActivityStore((s) => s.begin);
+  const resolve = useActivityStore((s) => s.resolve);
 
   const [modal, setModal] = useState<{ vault: Vault; mode: "stake" | "unstake" } | null>(null);
 
   const onCompound = () => {
-    if (totals.accrued <= 0n) return;
+    if (totals.accrued <= 0n) {
+      const c = ERROR_COPY[DomainError.NothingToCompound];
+      toast({ kind: "warning", title: c.title, desc: c.desc });
+      return;
+    }
+    const id = begin("compound", null, totals.accrued);
     toast({ kind: "pending", title: "Reinvesting rewards" });
     window.setTimeout(() => {
       const compounded = compoundAll();
+      resolve(id, "confirmed", { amount: compounded });
       toast({ kind: "success", title: "Reinvested", desc: `${formatUsd(compounded)} compounded` });
     }, 1200);
   };
