@@ -1,0 +1,1 @@
+test_FaucetCooldownBlocksSecondClaim|test_FaucetEmitsEvent|test_FaucetMintsToCaller|test_FaucetWorksAfterCooldown|test_MintRevertsWithoutRole
