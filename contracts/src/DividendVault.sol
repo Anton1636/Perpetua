@@ -4,43 +4,50 @@ pragma solidity ^0.8.24;
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IYieldSource} from "./IYieldSource.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title DividendVault
- * @notice ERC-4626 vault for a tokenized dividend equity. Users deposit the
- *         equity token and receive vault shares that appreciate as yield is
- *         harvested and compounded (DRIP). Yield comes from a pluggable
+ * @notice ERC-4626 vault for a tokenized dividend equity. Deposit the equity
+ *         token, receive vault shares that appreciate as harvested yield is
+ *         STREAMED into the vault (DRIP). Yield comes from a pluggable
  *         IYieldSource; a performance fee (bps) is taken from harvested yield.
  *
- * Security:
- * * Yield model (demo): the MockYieldSource MINTS yield directly into the vault
- * (push model), so deposited assets intentionally stay in the vault and are not
- * forwarded anywhere. In production with real securities-lending, capital would
- * instead be DEPLOYED to the source (approve + transfer) — see audit MEDIUM#03
- * and docs/ARCHITECTURE.md.
- * - OZ ERC4626 with a virtual-shares decimals offset (inflation-attack resistant).
- * - Pausable deposits (guardian can freeze new inflows in an emergency).
- * - Ownable for admin actions (moves to multisig+timelock on mainnet — see README).
+ * Anti-sandwich (audit HIGH#02): harvested yield is not credited instantly.
+ * It is locked and released linearly over STREAM_DURATION, so share price rises
+ * smoothly second-by-second. A deposit-before / withdraw-after sandwich around a
+ * harvest captures ~nothing, because there is no atomic jump to capture.
+ *
+ * Yield model (demo): the MockYieldSource MINTS yield into the vault (push), so
+ * deposited assets intentionally stay here. Production securities-lending would
+ * DEPLOY capital to the source instead — see docs/ARCHITECTURE.md.
+ *
+ * Security: OZ ERC4626 with virtual-shares decimals offset (inflation-attack
+ * resistant); Pausable deposits; Ownable admin (multisig+timelock on mainnet).
  */
 contract DividendVault is ERC4626, Ownable, Pausable {
     using SafeERC20 for IERC20;
+
     IYieldSource public yieldSource;
 
-    /// @notice performance fee on harvested yield, in basis points (0–2000)
     uint256 public performanceFeeBps;
-
-    /// @notice recipient of performance fees
     address public feeRecipient;
 
-    uint256 public constant MAX_FEE_BPS = 2_000; // 20% hard cap
+    uint256 public constant MAX_FEE_BPS = 2_000;
     uint256 private constant BPS = 10_000;
 
-    event Harvested(uint256 grossYield, uint256 fee, uint256 netCompounded);
+    /// @notice how long harvested yield takes to fully vest into share price
+    uint256 public constant STREAM_DURATION = 8 hours;
+
+    /// @notice amount of yield still locked (unvested) at streamStart
+    uint256 public lockedYield;
+    /// @notice timestamp the current stream began
+    uint256 public streamStart;
+
+    event Harvested(uint256 grossYield, uint256 fee, uint256 netStreamed);
     event PerformanceFeeUpdated(uint256 newFeeBps);
     event YieldSourceUpdated(address indexed newSource);
 
@@ -56,10 +63,29 @@ contract DividendVault is ERC4626, Ownable, Pausable {
         feeRecipient = owner_;
     }
 
-    /// @dev virtual shares offset — OZ default is 0; we use 6 to harden against
-    ///      the first-depositor inflation attack.
     function _decimalsOffset() internal pure override returns (uint8) {
         return 6;
+    }
+
+    // --- streaming accounting ---
+
+    /// @notice yield still locked right now (linearly unlocks over the window)
+    function lockedYieldNow() public view returns (uint256) {
+        uint256 locked = lockedYield;
+        if (locked == 0) return 0;
+        uint256 elapsed = block.timestamp - streamStart;
+        if (elapsed >= STREAM_DURATION) return 0;
+        // remaining = locked * (1 - elapsed/duration)
+        return locked - (locked * elapsed) / STREAM_DURATION;
+    }
+
+    /**
+     * @notice Total assets = real balance MINUS the portion of harvested yield
+     *         that hasn't vested yet. This is what makes share price rise smoothly
+     *         instead of jumping on harvest.
+     */
+    function totalAssets() public view override returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this)) - lockedYieldNow();
     }
 
     // --- admin ---
@@ -90,44 +116,35 @@ contract DividendVault is ERC4626, Ownable, Pausable {
     }
 
     // --- yield ---
+
     /**
-     * @notice Pull yield from the source, take the performance fee, and leave the
-     *         rest in the vault — which raises assets-per-share for everyone (DRIP).
-     * @dev Yield is measured by the ACTUAL change in the vault's asset balance,
-     *      never by the yield source's self-reported return value (a malicious
-     *      source could otherwise report fake gains to drain fees from deposits).
-     *      See audit HIGH#01.
+     * @notice Harvest yield from the source and begin streaming it. Any yield
+     *         still locked from a previous harvest is rolled into the new stream.
+     * @dev Yield measured by real balance delta, never the source's self-report
+     *      (audit HIGH#01).
      */
-    function harvest() external whenNotPaused returns (uint256 netCompounded) {
-        // cache storage reads (gas)
+    function harvest() external whenNotPaused returns (uint256 netStreamed) {
         IYieldSource source = yieldSource;
         require(address(source) != address(0), "no yield source");
 
         IERC20 assetToken = IERC20(asset());
-
-        // measure real delivery: balance after - balance before (audit HIGH#01)
         uint256 balanceBefore = assetToken.balanceOf(address(this));
         source.harvest(address(this));
         uint256 grossYield = assetToken.balanceOf(address(this)) -
             balanceBefore;
 
-        if (grossYield == 0) {
-            emit Harvested(0, 0, 0);
-            return 0;
+        uint256 fee;
+        if (grossYield > 0) {
+            fee = (grossYield * performanceFeeBps) / BPS;
+            if (fee > 0) assetToken.safeTransfer(feeRecipient, fee);
         }
+        netStreamed = grossYield - fee;
 
-        uint256 fee = (grossYield * performanceFeeBps) / BPS;
-        if (fee > 0) {
-            // SafeERC20 for non-standard tokens like USDT (audit MEDIUM#04)
-            assetToken.safeTransfer(feeRecipient, fee);
-        }
-        netCompounded = grossYield - fee;
-        // net yield stays in the vault -> totalAssets up -> shares appreciate.
-        // NOTE (audit HIGH#02): this raises share price atomically, which is
-        // sandwich-able. A streaming/drip distribution (yield released per-second)
-        // is the proper mitigation — planned for the keeper on Day 13. Documented
-        // as a known limitation for the demo.
-        emit Harvested(grossYield, fee, netCompounded);
+        // roll any still-locked yield into a fresh stream + the new net yield
+        lockedYield = lockedYieldNow() + netStreamed;
+        streamStart = block.timestamp;
+
+        emit Harvested(grossYield, fee, netStreamed);
     }
 
     // --- pausable deposits ---

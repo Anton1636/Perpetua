@@ -50,4 +50,19 @@ mutating state. The modal shows it before the user commits; tests assert
 ## Controllable time
 
 All time-based logic reads `shared/lib/time.ts` (`TimeProvider`), so tests can
-warp forward and the demo can run at ×N speed. Mirrors `vm.warp` in contracts.
+warp forward and the demo can run at ×N speed. Mirrors `vm.warp` in contracts
+
+## Immutable vaults (audit VaultFactory INFO#02)
+
+The factory deploys each vault with `new` — vaults are **immutable by design**.
+This is a deliberate trade-off:
+
+- **Trust over upgradeability.** Immutable contracts mean the owner cannot swap
+  vault logic under users' feet. For a protocol whose safety story is "the code
+  can't change on you", this is a feature, not a limitation.
+- **Less attack surface.** Proxy patterns (EIP-1167 clones + initializers) are a
+  well-known source of bugs (uninitialized proxies, storage collisions). We don't
+  add that surface to save deployment gas on a testnet.
+- **Gas is not our constraint.** Minimal-proxy clones (~70–80% cheaper deploys)
+  matter when deploying many vaults on mainnet. With a handful of vaults on
+  Sepolia, it's premature optimization. It remains a documented mainnet option.

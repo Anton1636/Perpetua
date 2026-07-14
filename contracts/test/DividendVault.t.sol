@@ -56,19 +56,40 @@ contract DividendVaultTest is Test {
         assertEq(vault.totalAssets(), 1_000e18);
     }
 
-    function test_HarvestIncreasesAssetsPerShare() public {
+    function test_HarvestStreamsYieldIntoAssetsPerShare() public {
         _deposit(alice, 1_000e18);
         uint256 sharesBefore = vault.balanceOf(alice);
         uint256 assetsBefore = vault.convertToAssets(sharesBefore);
 
-        // one year passes, then harvest
         vm.warp(block.timestamp + 365 days);
         vault.harvest();
 
-        uint256 assetsAfter = vault.convertToAssets(sharesBefore);
-        assertGt(assetsAfter, assetsBefore); // shares appreciated (DRIP)
-        // ~8.30% on 1000 = ~83 tokens of yield
-        assertApproxEqRel(assetsAfter, 1_083e18, 0.01e18); // within 1%
+        // right after harvest, yield is still locked -> price barely moved
+        uint256 assetsRightAfter = vault.convertToAssets(sharesBefore);
+        assertApproxEqAbs(assetsRightAfter, assetsBefore, 1e15); // ~unchanged
+
+        // after the full stream window, yield has vested
+        vm.warp(block.timestamp + vault.STREAM_DURATION());
+        uint256 assetsVested = vault.convertToAssets(sharesBefore);
+        assertGt(assetsVested, assetsBefore);
+        assertApproxEqRel(assetsVested, 1_083e18, 0.01e18);
+    }
+
+    function test_HarvestResistsSandwich() public {
+        // seed a long-term holder
+        _deposit(alice, 1_000e18);
+        vm.warp(block.timestamp + 365 days);
+
+        // attacker deposits a large amount right before harvest
+        _deposit(bob, 9_000e18);
+        vault.harvest();
+        // ...and withdraws immediately after
+        uint256 bobShares = vault.balanceOf(bob);
+        vm.prank(bob);
+        uint256 bobOut = vault.redeem(bobShares, bob, bob);
+
+        // attacker captured ~nothing because yield is still locked (streaming)
+        assertApproxEqAbs(bobOut, 9_000e18, 1e16); // got back ~what they put in
     }
 
     function test_PerformanceFeeGoesToRecipient() public {
@@ -76,13 +97,18 @@ contract DividendVaultTest is Test {
         vault.setPerformanceFee(1_000); // 10%
 
         _deposit(alice, 1_000e18);
+
+        // reset the yield source's clock to NOW, so the next harvest measures
+        // exactly one year of yield on alice's 1000 principal (deterministic).
+        source.start(address(vault)); // no-op if already started
+        // advance a full year from the deposit
         vm.warp(block.timestamp + 365 days);
 
         uint256 feeRecipientBefore = token.balanceOf(owner);
         vault.harvest();
         uint256 feeReceived = token.balanceOf(owner) - feeRecipientBefore;
 
-        // gross ~83, fee 10% ~8.3
+        // gross ~83e18 (8.30% of 1000), fee 10% ~8.3e18
         assertApproxEqRel(feeReceived, 8.3e18, 0.02e18);
     }
 
