@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {MockEquityToken} from "../src/MockEquityToken.sol";
 import {MockYieldSource} from "../src/MockYieldSource.sol";
 import {DividendVault} from "../src/DividendVault.sol";
+import {IYieldSource} from "../src/IYieldSource.sol";
 
 contract DividendVaultTest is Test {
     MockEquityToken internal token;
@@ -173,5 +174,69 @@ contract DividendVaultTest is Test {
         // user assets in the vault are not reduced
         assertEq(net, 0);
         assertEq(token.balanceOf(address(vault)), vaultBalanceBefore);
+    }
+
+    // --- edge cases ---
+
+    function test_HarvestWithNoYieldSourceReverts() public {
+        // fresh vault without a yield source set
+        vm.prank(owner);
+        DividendVault bare = new DividendVault(token, "Bare", "bOx", owner);
+        vm.expectRevert("no yield source");
+        bare.harvest();
+    }
+
+    function test_HarvestWithZeroYieldEmitsZero() public {
+        _deposit(alice, 1_000e18);
+        // harvest immediately — no time passed, so ~zero yield
+        uint256 net = vault.harvest();
+        assertEq(net, 0);
+    }
+
+    function test_SetFeeRecipientZeroReverts() public {
+        vm.prank(owner);
+        vm.expectRevert(DividendVault.ZeroAddress.selector);
+        vault.setFeeRecipient(address(0));
+    }
+
+    function test_SetYieldSourceZeroReverts() public {
+        vm.prank(owner);
+        vm.expectRevert(DividendVault.ZeroAddress.selector);
+        vault.setYieldSource(IYieldSource(address(0)));
+    }
+
+    function test_OnlyOwnerCanSetFee() public {
+        vm.prank(alice);
+        vm.expectRevert(); // Ownable: caller is not the owner
+        vault.setPerformanceFee(500);
+    }
+
+    function test_UnpauseRestoresDeposits() public {
+        vm.prank(owner);
+        vault.pause();
+        vm.prank(owner);
+        vault.unpause();
+        // deposit works again after unpause
+        _deposit(alice, 1_000e18);
+        assertEq(vault.totalAssets(), 1_000e18);
+    }
+
+    function test_SetFeeToMaxIsAllowed() public {
+        uint256 maxFee = vault.MAX_FEE_BPS(); // read before prank
+        vm.prank(owner);
+        vault.setPerformanceFee(maxFee); // exactly at cap = ok
+        assertEq(vault.performanceFeeBps(), maxFee);
+    }
+
+    function test_LockedYieldFullyVestsAfterWindow() public {
+        _deposit(alice, 1_000e18);
+        vm.warp(block.timestamp + 365 days);
+        vault.harvest();
+        // partway through the stream, some yield is still locked
+        vm.warp(block.timestamp + vault.STREAM_DURATION() / 2);
+        assertGt(vault.lockedYieldNow(), 0);
+        // after the full window, nothing is locked
+        vm.warp(block.timestamp + vault.STREAM_DURATION());
+        assertEq(vault.lockedYieldNow(), 0);
     }
 }

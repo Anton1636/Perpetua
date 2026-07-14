@@ -78,4 +78,19 @@ contract AutoCompounderTest is Test {
         keeper.poke(vault);
         assertFalse(keeper.canPoke(address(vault))); // just poked -> false
     }
+
+    function test_FirstPokeAlwaysAllowed() public view {
+        // canPoke is true before any poke (lastPoke == 0)
+        assertTrue(keeper.canPoke(address(vault)));
+    }
+
+    function test_PokeOnPausedVaultReverts() public {
+        vm.warp(block.timestamp + 365 days);
+        vm.prank(owner);
+        vault.pause();
+        // harvest is whenNotPaused -> poke propagates the revert
+        vm.prank(bot);
+        vm.expectRevert();
+        keeper.poke(vault);
+    }
 }
