@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+contracts/.env
 .env.local
 *.log
 .DS_Store
