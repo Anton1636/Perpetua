@@ -4,6 +4,52 @@ import { usePositions } from "@/entities/position/model";
 import { PortfolioHero } from "@/features/portfolio-hero/PortfolioHero";
 import { VaultsGrid } from "@/features/vaults-grid/VaultsGrid";
 import styles from "./Portfolio.module.css";
+import { useAccount } from "wagmi";
+import { VAULTS } from "@/shared/web3/addresses";
+import { useTokenBalance } from "@/features/wallet/useTokenBalance";
+import { formatUsd } from "@/shared/lib/format";
+
+function OnChainBalances() {
+  const { isConnected } = useAccount();
+  if (!isConnected) return null;
+  return (
+    <div
+      style={{
+        marginTop: 20,
+        padding: 16,
+        border: "1px solid var(--c-line)",
+        borderRadius: "var(--r-md)",
+        background: "var(--c-surface1)",
+      }}
+    >
+      <div
+        className="label"
+        style={{ fontSize: 11, color: "var(--c-faint)", letterSpacing: "0.07em", marginBottom: 10 }}
+      >
+        ON-CHAIN WALLET BALANCES (LIVE FROM SEPOLIA)
+      </div>
+      <div style={{ display: "grid", gap: 6 }}>
+        {VAULTS.map((v) => (
+          <BalanceRow key={v.symbol} deployment={v} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BalanceRow({ deployment }: { deployment: (typeof VAULTS)[number] }) {
+  const { balance, isLoading } = useTokenBalance(deployment);
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+      <span className="mono" style={{ color: "var(--c-cream)" }}>
+        {deployment.symbol}
+      </span>
+      <span className="mono" style={{ color: balance > 0n ? "var(--c-lume)" : "var(--c-faint)" }}>
+        {isLoading ? "…" : formatUsd(balance)}
+      </span>
+    </div>
+  );
+}
 
 export function Portfolio() {
   const vaults = useVaults();
@@ -55,6 +101,7 @@ export function Portfolio() {
         </Card>
       )}
       <VaultsGrid />
+      <OnChainBalances />
     </div>
   );
 }

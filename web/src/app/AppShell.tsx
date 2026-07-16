@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, Activity, ShieldHalf, Menu, X } from "lucide-react";
+import { ConnectButton } from "@/features/wallet/ConnectButton";
 import styles from "./AppShell.module.css";
 
 const NAV = [
@@ -38,20 +39,14 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function WalletCard() {
+// Wallet block: RainbowKit connect button + demo/network note. Reused in the
+// desktop sidebar and the mobile drawer.
+function WalletBlock() {
   return (
-    <div className={styles.walletCard}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span className={styles.dot} />
-        <span className="mono" style={{ fontSize: 12, color: "var(--c-lume)" }}>
-          Connected
-        </span>
-      </div>
-      <div className="mono" style={{ marginTop: 8, fontSize: 13, color: "var(--c-cream)" }}>
-        0x7f3a…91D2
-      </div>
-      <div style={{ marginTop: 6, fontSize: 11, color: "var(--c-amber)" }}>
-        Demo mode · resets on refresh
+    <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+      <ConnectButton />
+      <div style={{ fontSize: 11, color: "var(--c-amber)", textAlign: "center" }}>
+        Demo · Sepolia testnet
       </div>
     </div>
   );
@@ -65,7 +60,7 @@ export function AppShell() {
       <aside className={styles.sidebar}>
         <Brand />
         <NavItems />
-        <WalletCard />
+        <WalletBlock />
       </aside>
 
       {/* mobile drawer */}
@@ -78,7 +73,7 @@ export function AppShell() {
           </button>
         </div>
         <NavItems onNavigate={() => setMenu(false)} />
-        <WalletCard />
+        <WalletBlock />
       </aside>
 
       {/* main */}

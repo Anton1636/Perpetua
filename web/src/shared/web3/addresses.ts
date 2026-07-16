@@ -1,0 +1,55 @@
+// Deployed Sepolia addresses (mirror of contracts/deployments/sepolia.json).
+// Kept as a typed module so the app gets autocomplete + compile-time checks.
+export const CHAIN_ID = 11155111 as const;
+
+export const CONTRACTS = {
+  factory: "0x8c87bd44f4a6cb486a8a3a3506c77fdceccee65f",
+  keeper: "0x65bb8ba1b2dfea013f9b5cfc39f655f46bd20aa2",
+  zapRouter: "0x4c4cfcaced39d651554acb20538c0fe17afa1868",
+} as const;
+
+export interface VaultDeployment {
+  symbol: string;
+  token: `0x${string}`;
+  vault: `0x${string}`;
+  source: `0x${string}`;
+}
+
+export const VAULTS: VaultDeployment[] = [
+  {
+    symbol: "Ox",
+    token: "0xc3847788871c1778ad26cce55c45c5156f73a800",
+    vault: "0x8f9d8c1aa4e65c5d45755e2e00f5d3793d0c3241",
+    source: "0xac6ca76bcd32d7bffafd2bdeefbab6464bd69b72",
+  },
+  {
+    symbol: "KOx",
+    token: "0xb64df0f65f760ca561016ac906429d2c259fd177",
+    vault: "0x6bf442ad85ad0125660fddd56201849552dae4ed",
+    source: "0x99f04fc0bc27231b886ad3b72cf0182c9286ef45",
+  },
+  {
+    symbol: "JNJx",
+    token: "0x6694a6243e06f650e35b805f85e6745d4169668e",
+    vault: "0xaa41acba1215f0aa84bfc93b43c6e11563e56780",
+    source: "0x400857f1dbf153ac02fa3b6f0baebe4ebc21a6ab",
+  },
+  {
+    symbol: "SPYx",
+    token: "0x217e24b191eb1e946213e1f34e30aa40afbc2543",
+    vault: "0xfbfdf0685b162586eff65274c14ec487e310c630",
+    source: "0x60421328f5d7fae3f5ff9f3419627738a7213d44",
+  },
+  {
+    symbol: "AAPLx",
+    token: "0x24105ce8531406a1cb290bd9989ab32b582722c9",
+    vault: "0x83687caf27ce4522d346a6a0efbfb41b37f99cbc",
+    source: "0x284be9eeaedbb248f6cd66eb725a6ff8bf97044f",
+  },
+];
+
+export const vaultBySymbol = (symbol: string): VaultDeployment | undefined =>
+  VAULTS.find((v) => v.symbol === symbol);
+
+export const vaultByAddress = (addr: string): VaultDeployment | undefined =>
+  VAULTS.find((v) => v.vault.toLowerCase() === addr.toLowerCase());
