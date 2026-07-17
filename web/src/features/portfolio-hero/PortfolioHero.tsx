@@ -1,6 +1,6 @@
 import { Card, Pill } from "@/shared/ui";
 import { usePortfolioTotals } from "@/entities/position/model";
-import { usePositionStore } from "@/entities/position/store";
+import { useAvailable } from "@/entities/position/model";
 import { useLiveAccrual } from "@/shared/lib/use-live-accrual";
 import { formatUsd, formatPct } from "@/shared/lib/format";
 import { ChronometerDial } from "./ChronometerDial";
@@ -8,7 +8,7 @@ import styles from "./PortfolioHero.module.css";
 
 export function PortfolioHero() {
   const totals = usePortfolioTotals();
-  const available = usePositionStore((s) => s.available);
+  const available = useAvailable();
   const liveAccrual = useLiveAccrual(totals.accrued, totals.staked, totals.blendedApy);
 
   return (

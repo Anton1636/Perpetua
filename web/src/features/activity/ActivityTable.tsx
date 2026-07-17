@@ -7,6 +7,8 @@ import {
   XCircle,
   Clock,
   Inbox,
+  Zap as ZapIcon,
+  ExternalLink,
 } from "lucide-react";
 import { Card, Pill } from "@/shared/ui";
 import type { ActivityEvent } from "@/entities/activity/types";
@@ -18,8 +20,9 @@ import styles from "./ActivityTable.module.css";
 const KIND_META = {
   stake: { icon: ArrowDownToLine, label: "Stake", sign: "+" },
   unstake: { icon: ArrowUpFromLine, label: "Unstake", sign: "−" },
-  compound: { icon: RefreshCw, label: "Compound", sign: "+" },
+  compound: { icon: RefreshCw, label: "Harvest", sign: "+" },
   accrue: { icon: RefreshCw, label: "Accrue", sign: "+" },
+  zap: { icon: ZapIcon, label: "Zap", sign: "+" },
 } as const;
 
 function StatusPill({ e }: { e: ActivityEvent }) {
@@ -142,17 +145,39 @@ export function ActivityTable({ events }: { events: ActivityEvent[] }) {
             </div>
             <div className={styles.cell}>
               <span className={styles.clabel}>Time</span>
-              <span
-                style={{
-                  color: "var(--c-steel)",
-                  fontSize: 13,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
+              <div
+                style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}
               >
-                <Clock size={13} /> {timeAgo(e.timestamp)}
-              </span>
+                <span
+                  style={{
+                    color: "var(--c-steel)",
+                    fontSize: 13,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <Clock size={13} /> {timeAgo(e.timestamp)}
+                </span>
+                {e.hash && (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${e.hash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mono"
+                    style={{
+                      fontSize: 11,
+                      color: "#9FD9FF",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    View <ExternalLink size={11} />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         );

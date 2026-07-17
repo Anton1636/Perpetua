@@ -1,49 +1,46 @@
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Zap as ZapIcon } from "lucide-react";
 import { Card, Skeleton, Button, useToast } from "@/shared/ui";
 import { useVaults } from "@/entities/vault/model";
-import { usePositionStore } from "@/entities/position/store";
-import { usePortfolioTotals } from "@/entities/position/model";
-import { formatUsd } from "@/shared/lib/format";
+import { usePositions } from "@/entities/position/model";
 import type { Vault } from "@/entities/vault/types";
 import { VaultCard } from "./VaultCard";
 import { StakeModal } from "@/features/stake/StakeModal";
+import { ZapModal } from "@/features/zap/ZapModal";
+import { useHarvestOnChain } from "./useHarvestOnChain";
 import styles from "./VaultsGrid.module.css";
-import { useActivityStore } from "@/entities/activity/store";
-import { DomainError, ERROR_COPY } from "@/shared/lib/errors";
 
 export function VaultsGrid() {
   const vaults = useVaults();
+  const positions = usePositions();
   const toast = useToast();
-  const compoundAll = usePositionStore((s) => s.compoundAll);
-  const totals = usePortfolioTotals();
-  const begin = useActivityStore((s) => s.begin);
-  const resolve = useActivityStore((s) => s.resolve);
+  const { harvest } = useHarvestOnChain();
 
   const [modal, setModal] = useState<{ vault: Vault; mode: "stake" | "unstake" } | null>(null);
+  const [zapOpen, setZapOpen] = useState(false);
 
-  const onCompound = () => {
-    if (totals.accrued <= 0n) {
-      const c = ERROR_COPY[DomainError.NothingToCompound];
-      toast({ kind: "warning", title: c.title, desc: c.desc });
+  const onHarvestAll = async () => {
+    if (positions.length === 0) {
+      toast({ kind: "warning", title: "No active positions", desc: "Stake in a vault first" });
       return;
     }
-    const id = begin("compound", null, totals.accrued);
-    toast({ kind: "pending", title: "Reinvesting rewards" });
-    window.setTimeout(() => {
-      const compounded = compoundAll();
-      resolve(id, "confirmed", { amount: compounded });
-      toast({ kind: "success", title: "Reinvested", desc: `${formatUsd(compounded)} compounded` });
-    }, 1200);
+    for (const p of positions) {
+      await harvest(p.vaultAddress);
+    }
   };
 
   return (
     <div>
       <div className={styles.head}>
         <span className={styles.label}>Vaults</span>
-        <Button variant="ghost" size="sm" onClick={onCompound}>
-          <RefreshCw size={14} /> Compound rewards
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button variant="ghost" size="sm" onClick={() => setZapOpen(true)}>
+            <ZapIcon size={14} /> Zap stake
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onHarvestAll}>
+            <RefreshCw size={14} /> Harvest my vaults
+          </Button>
+        </div>
       </div>
 
       {vaults.isLoading ? (
@@ -74,6 +71,7 @@ export function VaultsGrid() {
         mode={modal?.mode ?? "stake"}
         onClose={() => setModal(null)}
       />
+      <ZapModal open={zapOpen} onClose={() => setZapOpen(false)} />
     </div>
   );
 }

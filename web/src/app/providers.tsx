@@ -6,9 +6,11 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { ToastProvider } from "@/shared/ui";
 import { queryClient } from "@/shared/api/query-client";
 import { wagmiConfig } from "@/shared/web3/config";
-import { AccrualTicker } from "@/features/accrual/AccrualTicker";
-import { SpeedControl } from "@/features/dev/SpeedControl";
 
+// AccrualTicker + SpeedControl are retired: they animated a mock
+// per-second accrual figure. Now yield lives in rising share price, realized
+// by harvest — the on-chain equivalent of "watch time pass fast" is the
+// Harvest button itself, not a speed toy over mock data.
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
@@ -20,11 +22,7 @@ export function Providers({ children }: { children: ReactNode }) {
             borderRadius: "medium",
           })}
         >
-          <ToastProvider>
-            <AccrualTicker />
-            <SpeedControl />
-            {children}
-          </ToastProvider>
+          <ToastProvider>{children}</ToastProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

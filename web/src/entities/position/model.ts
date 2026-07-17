@@ -1,10 +1,28 @@
 import type { Position } from "./types";
-import { usePositionStore } from "./store";
+import { useOnChainPositions } from "./chain";
 import { useVaults, vaultApy } from "@/entities/vault/model";
 import { toNumber } from "@/shared/lib/format";
 
+// Positions now come from the chain (via useOnChainPositions) when a wallet is
+// connected. Falls back to empty when disconnected.
 export function usePositions(): Position[] {
-  return usePositionStore((s) => s.positions);
+  const { data } = useOnChainPositions();
+  if (!data) return [];
+  return data
+    .filter((p) => p.assets > 0n)
+    .map((p) => ({
+      vaultAddress: p.vaultAddress,
+      assets: p.assets,
+      principal: p.assets, // on-chain we don't track cost basis yet (Day 22: from events)
+      accrued: 0n, // yield is reflected in share price, not a separate figure now
+    }));
+}
+
+// Total available to stake = sum of wallet token balances across all vaults.
+export function useAvailable(): bigint {
+  const { data } = useOnChainPositions();
+  if (!data) return 0n;
+  return data.reduce((sum, p) => sum + p.walletBalance, 0n);
 }
 
 export function usePortfolioTotals() {
@@ -13,7 +31,6 @@ export function usePortfolioTotals() {
 
   if (!vaults) return { staked: 0n, accrued: 0n, blendedApy: 0, count: 0 };
 
-  // honest units: staked is a sum of ASSETS (wei), not shares
   const staked = positions.reduce((sum, p) => sum + p.assets, 0n);
   const accrued = positions.reduce((sum, p) => sum + p.accrued, 0n);
 

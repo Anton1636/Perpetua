@@ -1,44 +1,75 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { usePositionStore, INITIAL_AVAILABLE } from "./store";
-import { MOCK_POSITIONS } from "./mock";
-import { previewStake, previewUnstake } from "./preview";
+import { describe, it, expect } from "vitest";
+import { previewStake, previewUnstake, previewCompound } from "./preview";
+import { DomainError } from "@/shared/lib/errors";
 import { toWei } from "@/shared/lib/format";
+import type { Position } from "./types";
 
-const VAULT = MOCK_POSITIONS[0].vaultAddress;
+// Pure-function tests. Money-conservation itself is now guaranteed by the
+// DividendVault contract (51 Foundry tests, incl. fuzz + invariants) — these
+// checks cover only the arithmetic previewX() shows the user before they sign.
+describe("previewStake", () => {
+  it("predicts balances moving from available into the vault", () => {
+    const p = previewStake(toWei("4000"), toWei("20000"), undefined);
+    expect(p.ok).toBe(true);
+    expect(p.availableAfter).toBe(toWei("16000"));
+    expect(p.stakedAfter).toBe(toWei("4000"));
+  });
 
-beforeEach(() => {
-  usePositionStore.setState({
-    positions: MOCK_POSITIONS.map((p) => ({ ...p })),
-    available: INITIAL_AVAILABLE,
+  it("adds on top of an existing position", () => {
+    const position: Position = {
+      vaultAddress: "0x0",
+      assets: toWei("1000"),
+      principal: toWei("1000"),
+      accrued: 0n,
+    };
+    const p = previewStake(toWei("500"), toWei("20000"), position);
+    expect(p.stakedAfter).toBe(toWei("1500"));
+  });
+
+  it("rejects an amount over available balance", () => {
+    const p = previewStake(toWei("20001"), toWei("20000"), undefined);
+    expect(p.ok).toBe(false);
+    expect(p.error).toBe(DomainError.InsufficientBalance);
   });
 });
 
-describe("preview matches execution", () => {
-  it("previewStake predicts the real store result", () => {
-    const pos = MOCK_POSITIONS.find((p) => p.vaultAddress === VAULT);
-    const preview = previewStake(toWei("4000"), INITIAL_AVAILABLE, pos);
-
-    usePositionStore.getState().stake(VAULT, toWei("4000"));
-    const s = usePositionStore.getState();
-
-    expect(preview.ok).toBe(true);
-    expect(s.available).toBe(preview.availableAfter);
-    expect(s.positions.find((p) => p.vaultAddress === VAULT)!.assets).toBe(preview.stakedAfter);
+describe("previewUnstake", () => {
+  it("returns the full position + accrued on a full exit", () => {
+    const position: Position = {
+      vaultAddress: "0x0",
+      assets: toWei("1000"),
+      principal: toWei("1000"),
+      accrued: toWei("20"),
+    };
+    const p = previewUnstake(toWei("1000"), toWei("5000"), position);
+    expect(p.ok).toBe(true);
+    expect(p.availableAfter).toBe(toWei("5000") + toWei("1000") + toWei("20"));
+    expect(p.stakedAfter).toBe(0n);
   });
 
-  it("previewUnstake predicts a full exit (incl. claimed rewards)", () => {
-    const pos = MOCK_POSITIONS.find((p) => p.vaultAddress === VAULT);
-    const preview = previewUnstake(pos!.assets, INITIAL_AVAILABLE, pos);
+  it("rejects withdrawing more than the position holds", () => {
+    const position: Position = {
+      vaultAddress: "0x0",
+      assets: toWei("1000"),
+      principal: toWei("1000"),
+      accrued: 0n,
+    };
+    const p = previewUnstake(toWei("1001"), toWei("5000"), position);
+    expect(p.ok).toBe(false);
+    expect(p.error).toBe(DomainError.ExceedsPosition);
+  });
+});
 
-    usePositionStore.getState().unstake(VAULT, pos!.assets);
-    const s = usePositionStore.getState();
-
-    expect(preview.ok).toBe(true);
-    expect(s.available).toBe(preview.availableAfter); // includes accrued
+describe("previewCompound", () => {
+  it("moves accrued into staked", () => {
+    const p = previewCompound(toWei("50"), toWei("1000"));
+    expect(p.ok).toBe(true);
+    expect(p.stakedAfter).toBe(toWei("1050"));
   });
 
-  it("previewStake rejects over-balance without touching state", () => {
-    const preview = previewStake(INITIAL_AVAILABLE + 1n, INITIAL_AVAILABLE, undefined);
-    expect(preview.ok).toBe(false);
+  it("rejects when nothing has accrued", () => {
+    const p = previewCompound(0n, toWei("1000"));
+    expect(p.ok).toBe(false);
+    expect(p.error).toBe(DomainError.NothingToCompound);
   });
 });

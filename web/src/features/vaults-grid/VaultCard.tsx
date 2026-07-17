@@ -2,10 +2,12 @@ import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { Card, Button } from "@/shared/ui";
 import type { Vault } from "@/entities/vault/types";
 import { vaultApy } from "@/entities/vault/model";
-import { usePositionStore } from "@/entities/position/store";
-import { formatUsd, formatUsdPrecise, formatPct } from "@/shared/lib/format";
+import { usePositions } from "@/entities/position/model";
+import { formatUsd, formatPct } from "@/shared/lib/format";
 import { RISK_META } from "@/shared/lib/risk";
 import styles from "./VaultCard.module.css";
+import { useFaucet } from "@/features/wallet/useFaucet";
+import { vaultBySymbol } from "@/shared/web3/addresses";
 
 interface Props {
   vault: Vault;
@@ -14,11 +16,11 @@ interface Props {
 }
 
 export function VaultCard({ vault, onStake, onUnstake }: Props) {
-  const position = usePositionStore((s) =>
-    s.positions.find((p) => p.vaultAddress === vault.address),
-  );
+  const positions = usePositions();
+  const position = positions.find((p) => p.vaultAddress === vault.address);
   const risk = RISK_META[vault.risk];
   const staked = position?.assets ?? 0n;
+  const { claim } = useFaucet();
 
   return (
     <Card elevation={2} className={styles.card}>
@@ -77,9 +79,9 @@ export function VaultCard({ vault, onStake, onUnstake }: Props) {
             </span>
           </div>
           <div className={styles.posRow} style={{ marginTop: 5 }}>
-            <span style={{ color: "var(--c-steel)" }}>Earned</span>
-            <span className="mono" style={{ fontWeight: 600, color: "var(--c-lume)" }}>
-              {formatUsdPrecise(position!.accrued, 4)}
+            <span style={{ color: "var(--c-steel)" }}>Vault TVL</span>
+            <span className="mono" style={{ color: "var(--c-steel)" }}>
+              {formatUsd(vault.tvl)}
             </span>
           </div>
         </div>
@@ -88,6 +90,17 @@ export function VaultCard({ vault, onStake, onUnstake }: Props) {
       )}
 
       <div className={styles.actions}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const dep = vaultBySymbol(vault.symbol);
+            if (dep) claim(dep);
+          }}
+          title="Get test tokens"
+        >
+          Faucet
+        </Button>
         <Button style={{ flex: 1 }} onClick={() => onStake(vault)}>
           <ArrowDownToLine size={15} /> Stake
         </Button>

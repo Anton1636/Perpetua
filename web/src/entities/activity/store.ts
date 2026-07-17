@@ -10,6 +10,7 @@ interface ActivityState {
     status: Exclude<ActivityStatus, "pending">,
     patch?: { amount?: bigint; error?: DomainError },
   ) => void;
+  setHash: (id: string, hash: `0x${string}`) => void;
 }
 
 let seq = 0;
@@ -36,6 +37,9 @@ export const useActivityStore = create<ActivityState>((set) => ({
     }));
     return id;
   },
+
+  setHash: (id, hash) =>
+    set((s) => ({ events: s.events.map((e) => (e.id === id ? { ...e, hash } : e)) })),
 
   // flip pending -> confirmed/failed (the moment the "tx" settles)
   resolve: (id, status, patch) =>

@@ -5,7 +5,8 @@ const FILTERS: { id: ActivityFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "stake", label: "Stake" },
   { id: "unstake", label: "Unstake" },
-  { id: "compound", label: "Compound" },
+  { id: "compound", label: "Harvest" },
+  { id: "zap", label: "Zap" },
 ];
 
 export function ActivityFilters() {

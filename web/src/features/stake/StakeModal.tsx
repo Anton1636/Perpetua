@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { Modal, Button } from "@/shared/ui";
 import type { Vault } from "@/entities/vault/types";
-import { usePositionStore } from "@/entities/position/store";
+import { usePositions, useAvailable } from "@/entities/position/model";
+import { useStakeActions } from "./useStakeActions";
 import { amountSchema } from "./schema";
-import { useStakeAction } from "./useStakeAction";
-import { formatUsd, formatUsdNumber, formatPct, toWei, toNumber } from "@/shared/lib/format";
-import { vaultApy } from "@/entities/vault/model";
-import styles from "./StakeModal.module.css";
 import { previewStake, previewUnstake } from "@/entities/position/preview";
 import { TxPreview } from "@/features/security/TxPreview";
+import { formatUsd, formatUsdNumber, formatPct, toWei, toNumber } from "@/shared/lib/format";
+import { vaultApy } from "@/entities/vault/model";
+import { vaultBySymbol } from "@/shared/web3/addresses";
+import styles from "./StakeModal.module.css";
 
 interface Props {
   vault: Vault | null;
@@ -18,9 +19,11 @@ interface Props {
 
 export function StakeModal({ vault, mode, onClose }: Props) {
   const [amount, setAmount] = useState("");
-  const runAction = useStakeAction();
-  const positions = usePositionStore((s) => s.positions);
-  const available = usePositionStore((s) => s.available);
+  const [isMax, setIsMax] = useState(false);
+
+  const { stake, unstake } = useStakeActions();
+  const positions = usePositions();
+  const available = useAvailable();
 
   const staked = vault
     ? (positions.find((p) => p.vaultAddress === vault.address)?.assets ?? 0n)
@@ -35,24 +38,31 @@ export function StakeModal({ vault, mode, onClose }: Props) {
       : { ok: false, error: result.error.issues[0]?.message ?? "" };
   }, [amount, maxWei, vault]);
 
-  const preview = useMemo(() => {
-    if (!vault || !amount || !validation.ok) return null;
-    const pos = positions.find((p) => p.vaultAddress === vault.address);
-    const amt = toWei(amount);
-    return mode === "stake"
-      ? previewStake(amt, available, pos)
-      : previewUnstake(amt, available, pos);
-  }, [vault, amount, validation.ok, mode, available, positions]);
-
   if (!vault) return null;
 
+  const deployment = vaultBySymbol(vault.symbol);
+
+  const preview = (() => {
+    if (!amount || !validation.ok) return null;
+    const position = positions.find((p) => p.vaultAddress === vault.address);
+    const amt = isMax ? maxWei : toWei(amount);
+    return mode === "stake"
+      ? previewStake(amt, available, position)
+      : previewUnstake(amt, available, position);
+  })();
+
   const submit = () => {
-    if (!validation.ok) return;
-    runAction(mode, vault, toWei(amount));
+    if (!validation.ok || !deployment) return;
+    const amountWei = isMax ? maxWei : toWei(amount);
+    if (mode === "stake") stake(deployment, amountWei);
+    else unstake(deployment, amountWei);
     onClose();
   };
 
-  const setPct = (pct: number) => setAmount(String(Math.round(toNumber(maxWei) * pct)));
+  const setPct = (pct: number) => {
+    setIsMax(pct === 1);
+    setAmount(String(Math.round(toNumber(maxWei) * pct)));
+  };
 
   return (
     <Modal
@@ -90,7 +100,10 @@ export function StakeModal({ vault, mode, onClose }: Props) {
         <input
           className={styles.input}
           value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+          onChange={(e) => {
+            setIsMax(false);
+            setAmount(e.target.value.replace(/[^0-9.]/g, ""));
+          }}
           inputMode="decimal"
           placeholder="0.00"
           autoFocus
@@ -118,7 +131,11 @@ export function StakeModal({ vault, mode, onClose }: Props) {
 
       {validation.error && <div className={styles.error}>{validation.error}</div>}
 
-      <Button style={{ width: "100%", marginTop: 18 }} disabled={!validation.ok} onClick={submit}>
+      <Button
+        style={{ width: "100%", marginTop: 18 }}
+        disabled={!validation.ok || !deployment}
+        onClick={submit}
+      >
         {mode === "stake" ? "Stake & start earning" : "Unstake"}
       </Button>
     </Modal>
