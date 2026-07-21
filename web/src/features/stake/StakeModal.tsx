@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Modal, Button } from "@/shared/ui";
 import type { Vault } from "@/entities/vault/types";
 import { usePositions, useAvailable } from "@/entities/position/model";
@@ -10,7 +10,8 @@ import { formatUsd, formatUsdNumber, formatPct, toWei, toNumber } from "@/shared
 import { vaultApy } from "@/entities/vault/model";
 import { vaultBySymbol } from "@/shared/web3/addresses";
 import styles from "./StakeModal.module.css";
-
+import { useSimulate } from "@/shared/web3/use-simulate";
+import { ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
 interface Props {
   vault: Vault | null;
   mode: "stake" | "unstake";
@@ -38,9 +39,23 @@ export function StakeModal({ vault, mode, onClose }: Props) {
       : { ok: false, error: result.error.issues[0]?.message ?? "" };
   }, [amount, maxWei, vault]);
 
-  if (!vault) return null;
+  const deployment = vault ? vaultBySymbol(vault.symbol) : undefined;
 
-  const deployment = vaultBySymbol(vault.symbol);
+  const { simulate, result: sim, isSimulating, reset: resetSim } = useSimulate();
+
+  useEffect(() => {
+    if (!vault || !deployment || !validation.ok || !amount) {
+      resetSim();
+      return;
+    }
+    const amountWei = isMax ? maxWei : toWei(amount);
+    const t = setTimeout(() => {
+      simulate({ mode, vault: deployment.vault, amountWei });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [amount, validation.ok, mode, vault, deployment, isMax, maxWei, simulate, resetSim]);
+
+  if (!vault) return null;
 
   const preview = (() => {
     if (!amount || !validation.ok) return null;
@@ -128,6 +143,59 @@ export function StakeModal({ vault, mode, onClose }: Props) {
       </div>
 
       {preview && <TxPreview preview={preview} />}
+
+      {amount && validation.ok && (
+        <div
+          style={{
+            marginTop: 10,
+            padding: "10px 12px",
+            borderRadius: "var(--r-md)",
+            background: "var(--c-surface1)",
+            border: "1px solid var(--c-line)",
+            fontSize: 12.5,
+          }}
+        >
+          {isSimulating ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                color: "var(--c-steel)",
+              }}
+            >
+              <Loader2 size={13} className="spin" /> Simulating transaction…
+            </span>
+          ) : sim?.ok ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  color: "var(--c-lume)",
+                }}
+              >
+                <ShieldCheck size={13} /> Simulation passed
+              </span>
+              <span className="mono" style={{ color: "var(--c-steel)" }}>
+                ~{sim.gasCostEth} ETH gas
+              </span>
+            </div>
+          ) : sim && !sim.ok ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                color: "var(--c-red)",
+              }}
+            >
+              <AlertTriangle size={13} /> {sim.error}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {validation.error && <div className={styles.error}>{validation.error}</div>}
 
