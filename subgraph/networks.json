@@ -1,0 +1,8 @@
+{
+  "sepolia": {
+    "DividendVault": {
+      "address": "0x8f9d8c1aa4e65c5d45755e2e00f5d3793d0c3241",
+      "startBlock": 11279436
+    }
+  }
+}

@@ -1,0 +1,55 @@
+# One row per vault contract we track.
+type Vault @entity(immutable: false) {
+	id: ID! # vault address
+	asset: Bytes!
+	symbol: String!
+	totalAssets: BigInt!
+	totalShares: BigInt!
+	performanceFeeBps: BigInt!
+	createdAtBlock: BigInt!
+	createdAtTimestamp: BigInt!
+}
+
+# One row per (user, vault) pair — running position summary.
+type Position @entity(immutable: false) {
+	id: ID! # `${user}-${vault}`
+	user: Bytes!
+	vault: Vault!
+	shares: BigInt!
+	totalDeposited: BigInt! # sum of all deposit assets, for cost-basis / PnL (Day 22)
+	totalWithdrawn: BigInt!
+	updatedAtTimestamp: BigInt!
+}
+
+# One row per on-chain action. This is the ledger the frontend Activity page
+# was approximating locally in Zustand — now it's real, persistent, and
+# queryable across sessions/devices.
+type Transaction @entity(immutable: true) {
+	id: ID! # tx hash + log index
+	kind: TxKind!
+	vault: Vault!
+	user: Bytes!
+	amount: BigInt!
+	shares: BigInt
+	hash: Bytes!
+	timestamp: BigInt!
+	blockNumber: BigInt!
+}
+
+enum TxKind {
+	STAKE
+	UNSTAKE
+	HARVEST
+	ZAP
+}
+
+# One row per harvest — needed for Day 22's yield history chart.
+type HarvestEvent @entity(immutable: true) {
+	id: ID! # tx hash + log index
+	vault: Vault!
+	grossYield: BigInt!
+	fee: BigInt!
+	netStreamed: BigInt!
+	timestamp: BigInt!
+	blockNumber: BigInt!
+}

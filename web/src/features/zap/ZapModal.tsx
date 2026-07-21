@@ -17,7 +17,7 @@ export function ZapModal({ open, onClose }: Props) {
   const { zap, isZapping } = useZapOnChain();
   const [amounts, setAmounts] = useState<Record<string, string>>({});
 
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
 
   const selected = useMemo(() => {
     const out: { symbol: string; vaultAddress: `0x${string}`; amountWei: bigint }[] = [];
