@@ -4,6 +4,7 @@ import { usePositions } from "@/entities/position/model";
 import { PortfolioHero } from "@/features/portfolio-hero/PortfolioHero";
 import { VaultsGrid } from "@/features/vaults-grid/VaultsGrid";
 import styles from "./Portfolio.module.css";
+import { PnLCard } from "@/features/pnl/PnLCard";
 
 export function Portfolio() {
   const vaults = useVaults();
@@ -54,6 +55,7 @@ export function Portfolio() {
           <p style={{ color: "var(--c-steel)" }}>No positions yet. Stake a vault to begin.</p>
         </Card>
       )}
+      <PnLCard />
       <VaultsGrid />
     </div>
   );

@@ -1,20 +1,25 @@
-// Checks whether a contract is source-verified on Sepolia Etherscan. Uses the
-// public API (no key needed for this endpoint at low volume). Falls back to
-// "unknown" gracefully so the UI never breaks on a rate-limit.
-export type VerifyStatus = "verified" | "unverified" | "unknown";
+const ETHERSCAN_V2 = "https://api.etherscan.io/v2/api";
+const SEPOLIA_CHAIN_ID = 11155111;
+
+export type VerifyStatus = "verified" | "unverified" | "unavailable";
 
 export async function checkVerified(address: string): Promise<VerifyStatus> {
+  const key = import.meta.env.VITE_ETHERSCAN_API_KEY as string | undefined;
+  if (!key) return "unavailable";
+
   try {
-    const url = `https://api-sepolia.etherscan.io/api?module=contract&action=getabi&address=${address}`;
+    const url = `${ETHERSCAN_V2}?chainid=${SEPOLIA_CHAIN_ID}&module=contract&action=getabi&address=${address}&apikey=${key}`;
     const res = await fetch(url);
     const json = await res.json();
-    // status "1" + a real ABI string => verified
+
     if (json.status === "1" && typeof json.result === "string" && json.result.startsWith("[")) {
       return "verified";
     }
-    if (json.result === "Contract source code not verified") return "unverified";
-    return "unknown";
+    if (typeof json.result === "string" && json.result.includes("not verified")) {
+      return "unverified";
+    }
+    return "unavailable";
   } catch {
-    return "unknown";
+    return "unavailable";
   }
 }

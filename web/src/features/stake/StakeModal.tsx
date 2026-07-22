@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Button } from "@/shared/ui";
 import type { Vault } from "@/entities/vault/types";
 import { usePositions, useAvailable } from "@/entities/position/model";
@@ -9,79 +9,108 @@ import { TxPreview } from "@/features/security/TxPreview";
 import { formatUsd, formatUsdNumber, formatPct, toWei, toNumber } from "@/shared/lib/format";
 import { vaultApy } from "@/entities/vault/model";
 import { vaultBySymbol } from "@/shared/web3/addresses";
-import styles from "./StakeModal.module.css";
 import { useSimulate } from "@/shared/web3/use-simulate";
 import { ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
+import styles from "./StakeModal.module.css";
+
 interface Props {
   vault: Vault | null;
   mode: "stake" | "unstake";
   onClose: () => void;
 }
 
+interface BodyProps {
+  vault: Vault;
+  mode: "stake" | "unstake";
+  onClose: () => void;
+}
+
+function sanitizeDecimal(raw: string): string {
+  const [int, ...rest] = raw
+    .replace(/,/g, ".")
+    .replace(/[^0-9.]/g, "")
+    .split(".");
+  return rest.length ? `${int}.${rest.join("").slice(0, 2)}` : int;
+}
+
+/**
+ * Gate + remount boundary. The `key` gives a fresh state tree whenever the vault
+ * or the mode changes, which is why the body below needs no reset effect.
+ */
 export function StakeModal({ vault, mode, onClose }: Props) {
+  if (!vault) return null;
+  return (
+    <StakeModalBody key={`${vault.address}:${mode}`} vault={vault} mode={mode} onClose={onClose} />
+  );
+}
+
+function StakeModalBody({ vault, mode, onClose }: BodyProps) {
   const [amount, setAmount] = useState("");
-  const [isMax, setIsMax] = useState(false);
+  const [presetWei, setPresetWei] = useState<bigint | null>(null);
 
   const { stake, unstake } = useStakeActions();
   const positions = usePositions();
   const available = useAvailable();
+  const { simulate, result } = useSimulate();
 
-  const staked = vault
-    ? (positions.find((p) => p.vaultAddress === vault.address)?.assets ?? 0n)
-    : 0n;
-  const maxWei = vault ? (mode === "stake" ? available : staked) : 0n;
+  const position = positions.find((p) => p.vaultAddress === vault.address);
+  const maxWei = mode === "stake" ? available : (position?.assets ?? 0n);
 
-  const validation = useMemo(() => {
-    if (!vault) return { ok: false, error: "" };
-    const result = amountSchema(maxWei).safeParse(amount);
-    return result.success
-      ? { ok: true, error: "" }
-      : { ok: false, error: result.error.issues[0]?.message ?? "" };
-  }, [amount, maxWei, vault]);
+  const parsed = amountSchema(maxWei).safeParse(amount);
+  const validationError = parsed.success ? "" : (parsed.error.issues[0]?.message ?? "");
 
-  const deployment = vault ? vaultBySymbol(vault.symbol) : undefined;
+  // presetWei holds the exact bigint behind a %-button; typing clears it
+  const amountWei = presetWei ?? (parsed.success && amount ? toWei(amount) : 0n);
 
-  const { simulate, result: sim, isSimulating, reset: resetSim } = useSimulate();
+  const deployment = vaultBySymbol(vault.symbol);
+  const vaultAddress = deployment?.vault;
+
+  // Identifies the exact input a simulation belongs to. null = nothing to simulate.
+  const simKey =
+    vaultAddress && parsed.success && amountWei > 0n
+      ? `${mode}:${vaultAddress}:${amountWei}`
+      : null;
 
   useEffect(() => {
-    if (!vault || !deployment || !validation.ok || !amount) {
-      resetSim();
-      return;
-    }
-    const amountWei = isMax ? maxWei : toWei(amount);
+    if (!simKey || !vaultAddress) return;
     const t = setTimeout(() => {
-      simulate({ mode, vault: deployment.vault, amountWei });
+      simulate({ key: simKey, mode, vault: vaultAddress, amountWei });
     }, 500);
     return () => clearTimeout(t);
-  }, [amount, validation.ok, mode, vault, deployment, isMax, maxWei, simulate, resetSim]);
+  }, [simKey, vaultAddress, mode, amountWei, simulate]);
 
-  if (!vault) return null;
+  // A result is trusted only while it matches the current input — nothing to reset
+  const sim = simKey && result?.key === simKey ? result : null;
+  const isSimulating = simKey !== null && sim === null;
 
-  const preview = (() => {
-    if (!amount || !validation.ok) return null;
-    const position = positions.find((p) => p.vaultAddress === vault.address);
-    const amt = isMax ? maxWei : toWei(amount);
-    return mode === "stake"
-      ? previewStake(amt, available, position)
-      : previewUnstake(amt, available, position);
-  })();
+  const preview =
+    amountWei > 0n && parsed.success
+      ? mode === "stake"
+        ? previewStake(amountWei, available, position)
+        : previewUnstake(amountWei, available, position)
+      : null;
+
+  // an allowance revert is expected before approve — it must not block
+  const simBlocked = isSimulating || (!!sim && !sim.ok && !sim.needsApproval);
+  const canSubmit = parsed.success && !!deployment && amountWei > 0n && !simBlocked;
 
   const submit = () => {
-    if (!validation.ok || !deployment) return;
-    const amountWei = isMax ? maxWei : toWei(amount);
+    if (!canSubmit || !deployment) return;
     if (mode === "stake") stake(deployment, amountWei);
     else unstake(deployment, amountWei);
     onClose();
   };
 
   const setPct = (pct: number) => {
-    setIsMax(pct === 1);
-    setAmount(String(Math.round(toNumber(maxWei) * pct)));
+    const bps = BigInt(Math.round(pct * 10_000));
+    const exact = (maxWei * bps) / 10_000n; // exact, never above balance
+    setPresetWei(exact);
+    setAmount(String(Math.floor(toNumber(exact) * 100) / 100)); // display only
   };
 
   return (
     <Modal
-      open={!!vault}
+      open
       onOpenChange={(o) => !o && onClose()}
       title={`${mode === "stake" ? "Stake" : "Unstake"} ${vault.symbol}`}
     >
@@ -116,8 +145,8 @@ export function StakeModal({ vault, mode, onClose }: Props) {
           className={styles.input}
           value={amount}
           onChange={(e) => {
-            setIsMax(false);
-            setAmount(e.target.value.replace(/[^0-9.]/g, ""));
+            setPresetWei(null);
+            setAmount(sanitizeDecimal(e.target.value));
           }}
           inputMode="decimal"
           placeholder="0.00"
@@ -137,14 +166,14 @@ export function StakeModal({ vault, mode, onClose }: Props) {
         <div className={styles.sumRow}>
           <span style={{ color: "var(--c-steel)" }}>Est. first-year yield</span>
           <span className="mono" style={{ color: "var(--c-lume)", fontWeight: 600 }}>
-            {amount && validation.ok ? formatUsdNumber(Number(amount) * vaultApy(vault)) : "—"}
+            {amountWei > 0n ? formatUsdNumber(toNumber(amountWei) * vaultApy(vault)) : "—"}
           </span>
         </div>
       </div>
 
       {preview && <TxPreview preview={preview} />}
 
-      {amount && validation.ok && (
+      {simKey && (
         <div
           style={{
             marginTop: 10,
@@ -182,7 +211,18 @@ export function StakeModal({ vault, mode, onClose }: Props) {
                 ~{sim.gasCostEth} ETH gas
               </span>
             </div>
-          ) : sim && !sim.ok ? (
+          ) : sim?.needsApproval ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                color: "var(--c-amber)",
+              }}
+            >
+              <ShieldCheck size={13} /> Approval required — you&apos;ll sign two transactions
+            </span>
+          ) : (
             <span
               style={{
                 display: "inline-flex",
@@ -191,19 +231,15 @@ export function StakeModal({ vault, mode, onClose }: Props) {
                 color: "var(--c-red)",
               }}
             >
-              <AlertTriangle size={13} /> {sim.error}
+              <AlertTriangle size={13} /> {sim?.error}
             </span>
-          ) : null}
+          )}
         </div>
       )}
 
-      {validation.error && <div className={styles.error}>{validation.error}</div>}
+      {validationError && <div className={styles.error}>{validationError}</div>}
 
-      <Button
-        style={{ width: "100%", marginTop: 18 }}
-        disabled={!validation.ok || !deployment}
-        onClick={submit}
-      >
+      <Button style={{ width: "100%", marginTop: 18 }} disabled={!canSubmit} onClick={submit}>
         {mode === "stake" ? "Stake & start earning" : "Unstake"}
       </Button>
     </Modal>
