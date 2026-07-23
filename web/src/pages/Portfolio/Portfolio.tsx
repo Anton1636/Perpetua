@@ -5,6 +5,8 @@ import { PortfolioHero } from "@/features/portfolio-hero/PortfolioHero";
 import { VaultsGrid } from "@/features/vaults-grid/VaultsGrid";
 import styles from "./Portfolio.module.css";
 import { PnLCard } from "@/features/pnl/PnLCard";
+import { WatchBanner } from "@/features/watch/WatchBanner";
+import { InsightsCard } from "@/features/insights/InsightsCard";
 
 export function Portfolio() {
   const vaults = useVaults();
@@ -48,6 +50,7 @@ export function Portfolio() {
   return (
     <div>
       <h1 className={styles.title}>Portfolio</h1>
+      <WatchBanner />
       {positions.length > 0 ? (
         <PortfolioHero />
       ) : (
@@ -56,6 +59,7 @@ export function Portfolio() {
         </Card>
       )}
       <PnLCard />
+      <InsightsCard />
       <VaultsGrid />
     </div>
   );

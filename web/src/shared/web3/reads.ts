@@ -1,7 +1,7 @@
 import { readContracts } from "wagmi/actions";
 import { wagmiConfig } from "./config";
-import { dividendVaultAbi, mockEquityTokenAbi } from "./generated";
 import { VAULTS } from "./addresses";
+import { dividendVaultAbi, mockEquityTokenAbi, mockYieldSourceAbi } from "./generated";
 
 // Batches all vault reads into multicall requests. One round-trip fetches
 // totalAssets + share price for every vault, instead of N separate calls.
@@ -72,4 +72,25 @@ export async function readUserPositionsOnChain(user: `0x${string}`) {
     shares: (shares[i]?.result as bigint) ?? 0n,
     assets: (assets[i]?.result as bigint) ?? 0n,
   }));
+}
+
+// How much yield each vault has accrued but not yet harvested. Readable by
+// anyone — it's the signal behind the "yield ready to harvest" insight.
+export async function readPendingYields(): Promise<Record<string, bigint>> {
+  const contracts = VAULTS.map(
+    (v) =>
+      ({
+        address: v.source,
+        abi: mockYieldSourceAbi,
+        functionName: "pendingYield",
+        args: [v.vault],
+      }) as const,
+  );
+  const results = await readContracts(wagmiConfig, { contracts });
+
+  const out: Record<string, bigint> = {};
+  VAULTS.forEach((v, i) => {
+    out[v.vault.toLowerCase()] = (results[i]?.result as bigint) ?? 0n;
+  });
+  return out;
 }

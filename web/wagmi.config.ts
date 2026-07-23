@@ -19,5 +19,6 @@ export default defineConfig({
     { name: "VaultFactory", abi: abiFrom("VaultFactory") },
     { name: "AutoCompounder", abi: abiFrom("AutoCompounder") },
     { name: "ZapRouter", abi: abiFrom("ZapRouter") },
+    { name: "MockYieldSource", abi: abiFrom("MockYieldSource") },
   ],
 });

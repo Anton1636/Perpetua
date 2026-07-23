@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAccount } from "wagmi";
+import { useViewedAddress } from "@/features/watch/useViewedAddress";
 import { querySubgraph } from "@/shared/web3/subgraph";
 import { VAULTS } from "@/shared/web3/addresses";
 import { useOnChainPositions } from "@/entities/position/chain";
@@ -35,7 +35,7 @@ export function usePnL(): {
   isLoading: boolean;
   symbol: string;
 } {
-  const { address } = useAccount();
+  const { address } = useViewedAddress();
   const { data: chainPositions } = useOnChainPositions();
 
   const { data, isLoading } = useQuery({

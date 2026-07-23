@@ -1094,6 +1094,67 @@ export const mockEquityTokenAbi = [
 ] as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MockYieldSource
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const mockYieldSourceAbi = [
+  {
+    type: "constructor",
+    inputs: [
+      {
+        name: "asset_",
+        internalType: "contract MockEquityToken",
+        type: "address",
+      },
+      { name: "rateBps_", internalType: "uint256", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "asset",
+    outputs: [{ name: "", internalType: "contract MockEquityToken", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "vault", internalType: "address", type: "address" }],
+    name: "harvest",
+    outputs: [{ name: "yieldAmount", internalType: "uint256", type: "uint256" }],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "", internalType: "address", type: "address" }],
+    name: "lastHarvest",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "vault", internalType: "address", type: "address" }],
+    name: "pendingYield",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [],
+    name: "rateBps",
+    outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    inputs: [{ name: "vault", internalType: "address", type: "address" }],
+    name: "start",
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // VaultFactory
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

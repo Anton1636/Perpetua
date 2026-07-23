@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAccount } from "wagmi";
 import { readUserPositionsOnChain } from "@/shared/web3/reads";
+import { useViewedAddress } from "@/features/watch/useViewedAddress";
 
-// Reads the connected wallet's on-chain positions + available balances.
-// Replaces the mock Zustand data as the source of truth once connected.
+// Reads whichever address is being viewed — the connected wallet by default,
+// or a watched address in watch-only mode.
 export function useOnChainPositions() {
-  const { address } = useAccount();
+  const { address } = useViewedAddress();
 
   return useQuery({
     queryKey: ["positions", "onchain", address],

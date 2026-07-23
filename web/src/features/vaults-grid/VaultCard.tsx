@@ -8,6 +8,7 @@ import { RISK_META } from "@/shared/lib/risk";
 import styles from "./VaultCard.module.css";
 import { useFaucet } from "@/features/wallet/useFaucet";
 import { vaultBySymbol } from "@/shared/web3/addresses";
+import { useViewedAddress } from "@/features/watch/useViewedAddress";
 
 interface Props {
   vault: Vault;
@@ -21,6 +22,7 @@ export function VaultCard({ vault, onStake, onUnstake }: Props) {
   const risk = RISK_META[vault.risk];
   const staked = position?.assets ?? 0n;
   const { claim } = useFaucet();
+  const { isWatchOnly } = useViewedAddress();
 
   return (
     <Card elevation={2} className={styles.card}>
@@ -98,14 +100,20 @@ export function VaultCard({ vault, onStake, onUnstake }: Props) {
             if (dep) claim(dep);
           }}
           title="Get test tokens"
+          disabled={isWatchOnly}
         >
           Faucet
         </Button>
-        <Button style={{ flex: 1 }} onClick={() => onStake(vault)}>
+        <Button style={{ flex: 1 }} onClick={() => onStake(vault)} disabled={isWatchOnly}>
           <ArrowDownToLine size={15} /> Stake
         </Button>
         {staked > 0n && (
-          <Button variant="ghost" onClick={() => onUnstake(vault)} aria-label="Unstake">
+          <Button
+            variant="ghost"
+            onClick={() => onUnstake(vault)}
+            aria-label="Unstake"
+            disabled={isWatchOnly}
+          >
             <ArrowUpFromLine size={15} />
           </Button>
         )}

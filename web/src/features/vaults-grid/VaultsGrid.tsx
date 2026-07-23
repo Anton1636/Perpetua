@@ -9,6 +9,7 @@ import { StakeModal } from "@/features/stake/StakeModal";
 import { ZapModal } from "@/features/zap/ZapModal";
 import { useHarvestOnChain } from "./useHarvestOnChain";
 import styles from "./VaultsGrid.module.css";
+import { useViewedAddress } from "@/features/watch/useViewedAddress";
 
 export function VaultsGrid() {
   const vaults = useVaults();
@@ -18,6 +19,7 @@ export function VaultsGrid() {
 
   const [modal, setModal] = useState<{ vault: Vault; mode: "stake" | "unstake" } | null>(null);
   const [zapOpen, setZapOpen] = useState(false);
+  const { isWatchOnly } = useViewedAddress();
 
   const onHarvestAll = async () => {
     if (positions.length === 0) {
@@ -34,10 +36,10 @@ export function VaultsGrid() {
       <div className={styles.head}>
         <span className={styles.label}>Vaults</span>
         <div style={{ display: "flex", gap: 8 }}>
-          <Button variant="ghost" size="sm" onClick={() => setZapOpen(true)}>
+          <Button variant="ghost" size="sm" onClick={() => setZapOpen(true)} disabled={isWatchOnly}>
             <ZapIcon size={14} /> Zap stake
           </Button>
-          <Button variant="ghost" size="sm" onClick={onHarvestAll}>
+          <Button variant="ghost" size="sm" onClick={onHarvestAll} disabled={isWatchOnly}>
             <RefreshCw size={14} /> Harvest my vaults
           </Button>
         </div>

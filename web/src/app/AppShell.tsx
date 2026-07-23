@@ -3,6 +3,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, Activity, ShieldHalf, Menu, X } from "lucide-react";
 import { ConnectButton } from "@/features/wallet/ConnectButton";
 import styles from "./AppShell.module.css";
+import { Eye } from "lucide-react";
+import { WatchModal } from "@/features/watch/WatchModal";
 
 const NAV = [
   { to: "/", label: "Portfolio", icon: LayoutDashboard, end: true },
@@ -41,10 +43,29 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 
 // Wallet block: RainbowKit connect button + demo/network note. Reused in the
 // desktop sidebar and the mobile drawer.
-function WalletBlock() {
+function WalletBlock({ onWatch }: { onWatch: () => void }) {
   return (
     <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
       <ConnectButton />
+      <button
+        onClick={onWatch}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 7,
+          minHeight: 36,
+          borderRadius: "var(--r-md)",
+          background: "transparent",
+          border: "1px solid var(--c-line)",
+          color: "var(--c-steel)",
+          cursor: "pointer",
+          fontSize: 12.5,
+          fontFamily: "var(--f-body)",
+        }}
+      >
+        <Eye size={14} /> Watch an address
+      </button>
       <div style={{ fontSize: 11, color: "var(--c-amber)", textAlign: "center" }}>
         Demo · Sepolia testnet
       </div>
@@ -54,13 +75,19 @@ function WalletBlock() {
 
 export function AppShell() {
   const [menu, setMenu] = useState(false);
+  const [watchOpen, setWatchOpen] = useState(false);
   return (
     <div>
       {/* desktop sidebar */}
       <aside className={styles.sidebar}>
         <Brand />
         <NavItems />
-        <WalletBlock />
+        <WalletBlock
+          onWatch={() => {
+            setWatchOpen(true);
+            setMenu(false);
+          }}
+        />
       </aside>
 
       {/* mobile drawer */}
@@ -73,7 +100,12 @@ export function AppShell() {
           </button>
         </div>
         <NavItems onNavigate={() => setMenu(false)} />
-        <WalletBlock />
+        <WalletBlock
+          onWatch={() => {
+            setWatchOpen(true);
+            setMenu(false);
+          }}
+        />
       </aside>
 
       {/* main */}
@@ -93,6 +125,8 @@ export function AppShell() {
           <Outlet />
         </div>
       </main>
+
+      <WatchModal open={watchOpen} onClose={() => setWatchOpen(false)} />
     </div>
   );
 }
